@@ -1,0 +1,11 @@
+<div class="field-block" data-repeat-name="{{ input.name }}" data-repeat-count="{{ input.count|default:'1' }}">
+    <label for="{{ input.name }}_0">{{ input.name }}</label>
+    <div class="repeatable-inputs" data-input-group="{{ input.name }}">
+        <div class="repeatable-item">
+            <textarea id="{{ input.name }}_0" name="{{ input.name }}" data-repeat-index="0" placeholder="Enter value for {{ input.name }}"></textarea>
+        </div>
+    </div>
+    {% if input.count == '*' %}
+    <button type="button" class="add-repeatable-input" data-target-name="{{ input.name }}">Add another {{ input.name }}</button>
+    {% endif %}
+</div>

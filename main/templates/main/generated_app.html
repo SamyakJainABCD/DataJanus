@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generated App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fb;
+            margin: 0;
+            padding: 32px;
+            color: #1f2937;
+        }
+        .app-shell {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+            padding: 24px;
+        }
+        h1 {
+            margin-top: 0;
+        }
+        .panel {
+            display: grid;
+            gap: 18px;
+            margin-top: 18px;
+        }
+        .inputs, .outputs {
+            display: grid;
+            gap: 12px;
+        }
+        .field-block {
+            display: grid;
+            gap: 8px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 12px;
+            background: #fafafa;
+        }
+        .repeatable-inputs {
+            display: grid;
+            gap: 8px;
+        }
+        .repeatable-item {
+            display: grid;
+            gap: 6px;
+        }
+        label {
+            font-weight: 600;
+        }
+        input[type="text"], input[type="file"], textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 18px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .add-repeatable-input {
+            width: fit-content;
+            background: #e0e7ff;
+            color: #1e3a8a;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        .output-box {
+            min-height: 48px;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #f9fafb;
+            overflow-wrap: anywhere;
+        }
+        .output-image {
+            max-width: 100%;
+            max-height: 280px;
+            border-radius: 8px;
+            display: none;
+        }
+        .error {
+            color: #b91c1c;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+        <h1>Generated App</h1>
+
+        <div class="panel">
+            <div>
+                <h2>Inputs</h2>
+                <div class="inputs">
+                    {{ rendered_inputs|safe }}
+                </div>
+            </div>
+
+            <button type="button" id="run-app-button">Run</button>
+
+            <div>
+                <h2>Outputs</h2>
+                <div class="outputs">
+                    {{ rendered_outputs|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const appInputs = {{ inputs_json|safe }};
+        const appOutputs = {{ outputs_json|safe }};
+
+        function readFileAsDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error('Unable to read file.'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function setOutputValue(name, value) {
+            const target = document.getElementById(name);
+            if (!target) return;
+
+            if (target.tagName === 'IMG') {
+                target.src = value || '';
+                target.style.display = value ? 'block' : 'none';
+                return;
+            }
+
+            target.textContent = Array.isArray(value) ? JSON.stringify(value) : (value ?? '');
+        }
+
+        function addRepeatableInput(groupName) {
+            const group = document.querySelector(`[data-input-group="${groupName}"]`);
+            if (!group) return;
+
+            const index = group.querySelectorAll('.repeatable-item').length;
+            const templateField = group.querySelector('.repeatable-item');
+            if (!templateField) return;
+
+            const clone = templateField.cloneNode(true);
+            const input = clone.querySelector('textarea, input');
+            if (!input) return;
+
+            input.id = `${groupName}_${index}`;
+            input.name = groupName;
+            input.value = '';
+            input.dataset.repeatIndex = String(index);
+            group.appendChild(clone);
+        }
+
+        document.querySelectorAll('.add-repeatable-input').forEach((button) => {
+            button.addEventListener('click', () => addRepeatableInput(button.dataset.targetName));
+        });
+
+        async function collectInputs() {
+            const values = {};
+
+            for (const field of appInputs) {
+                const name = field.name;
+                const count = field.count || '1';
+                const group = document.querySelectorAll(`[data-input-group="${name}"] .repeatable-item input, [data-input-group="${name}"] .repeatable-item textarea`);
+                const collected = [];
+
+                for (const input of group) {
+                    if (input.type === 'file') {
+                        if (input.files && input.files[0]) {
+                            collected.push(await readFileAsDataUrl(input.files[0]));
+                        } else {
+                            collected.push('');
+                        }
+                    } else {
+                        collected.push(input.value);
+                    }
+                }
+
+                values[name] = count === '*' ? collected : (collected[0] ?? '');
+            }
+
+            return values;
+        }
+
+        document.getElementById('run-app-button').addEventListener('click', async () => {
+            try {
+                const inputValues = await collectInputs();
+                const context = { ...inputValues };
+
+                {% for item in outputs %}
+                    context['{{ item.name }}'] = '';
+                {% endfor %}
+
+                {% for item in inputs %}
+                    {% if item.count == '*' %}
+                        const {{ item.name }} = inputValues['{{ item.name }}'] ?? [];
+                    {% else %}
+                        const {{ item.name }} = inputValues['{{ item.name }}'] ?? '';
+                    {% endif %}
+                {% endfor %}
+
+                {% for item in outputs %}
+                    {% if item.count == '*' %}
+                        let {{ item.name }} = [];
+                    {% else %}
+                        let {{ item.name }} = '';
+                    {% endif %}
+                {% endfor %}
+
+                {{ code_snippet|safe }}
+
+                {% for item in outputs %}
+                    setOutputValue('{{ item.name }}', {{ item.name }});
+                {% endfor %}
+            } catch (error) {
+                const statusEl = document.getElementById('run-app-status');
+                if (statusEl) {
+                    statusEl.textContent = error.message || 'Something went wrong.';
+                }
+                console.error(error);
+            }
+        });
+    </script>
+</body>
+</html>

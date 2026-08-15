@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+</head>
+<body>
+    <h1>Home</h1>
+    <form method="post" action="{% url 'makeApp' %}">
+        {% csrf_token %}
+        <label for="user_prompt">App name:</label>
+        <input type="text" id="user_prompt" name="user_prompt" placeholder="Enter prompt">
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>
