@@ -93,34 +93,20 @@ def generate_processing_node(user_prompt: str):
     return response.text
 
 
+# make sure IO types are valid
 def _normalize_type(io_type):
     value = str(io_type or "String")
     try:
-        return AllowedType(value).value
+        return AllowedType(value)
     except ValueError:
-        return AllowedType.STRING.value
+        return AllowedType.STRING
 
 
 def _get_ui_variant(io_type):
     normalized = _normalize_type(io_type)
-    if normalized == AllowedType.IMAGE_DATA.value:
+    if normalized == AllowedType.IMAGE_DATA:
         return "image"
     return "string"
-
-
-def _parse_node_payload(raw_response):
-    if not raw_response:
-        return {}
-
-    if isinstance(raw_response, dict):
-        return raw_response
-
-    try:
-        payload = json.loads(raw_response)
-    except (TypeError, ValueError):
-        return {}
-
-    return payload if isinstance(payload, dict) else {}
 
 
 def _build_generated_app_html(request, node_payload):
@@ -147,10 +133,11 @@ def _build_generated_app_html(request, node_payload):
     for item in outputs:
         item_type = item.get('type', AllowedType.STRING.value)
         field_name = str(item.get('name', 'outputValue'))
+        item_count = str(item.get('count', '1'))
         rendered_outputs.append(
             render_to_string(
                 f'main/partials/{_get_ui_variant(item_type)}_output.html',
-                {'output': {'name': field_name, 'type': item_type}},
+                {'output': {'name': field_name, 'type': item_type, 'count': item_count}},
             )
         )
 
@@ -181,5 +168,8 @@ def makeApp(request):
     except Exception:
         return HttpResponse('The app generator could not process your request. Please try again.', status=500)
     print(raw_response)
-    node_payload = _parse_node_payload(raw_response)
+    if not raw_response:
+        node_payload = {}
+    else:
+        node_payload = json.loads(raw_response)
     return _build_generated_app_html(request, node_payload)

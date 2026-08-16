@@ -1,4 +1,10 @@
 <div class="field-block">
     <label>{{ output.name }}</label>
-    <div id="{{ output.name }}" class="output-box">Waiting for result...</div>
+    {% if output.count == '*' %}
+    <div id="{{ output.name }}" class="output-box" data-output-count="*" data-output-type="string">
+        <div class="output-array-item">Waiting for result...</div>
+    </div>
+    {% else %}
+    <div id="{{ output.name }}" class="output-box" data-output-count="1" data-output-type="string">Waiting for result...</div>
+    {% endif %}
 </div>

@@ -1,4 +1,8 @@
 <div class="field-block">
     <label>{{ output.name }}</label>
+    {% if output.count == '*' %}
+    <div id="{{ output.name }}" class="output-image-stack" data-output-count="*" data-output-type="image"></div>
+    {% else %}
     <img id="{{ output.name }}" class="output-image" alt="{{ output.name }} result" />
+    {% endif %}
 </div>

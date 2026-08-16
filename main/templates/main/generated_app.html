@@ -135,13 +135,41 @@
             const target = document.getElementById(name);
             if (!target) return;
 
+            const outputMeta = appOutputs.find((item) => item.name === name) || {};
+            const isArrayOutput = outputMeta.count === '*' || Array.isArray(value);
+
+            if (isArrayOutput) {
+                const items = Array.isArray(value) ? value : [value];
+                target.innerHTML = '';
+
+                if (target.dataset.outputType === 'image') {
+                    items.forEach((item) => {
+                        const img = document.createElement('img');
+                        img.className = 'output-image';
+                        img.alt = `${name} result`;
+                        img.src = item || '';
+                        img.style.display = item ? 'block' : 'none';
+                        target.appendChild(img);
+                    });
+                    return;
+                }
+
+                items.forEach((item) => {
+                    const row = document.createElement('div');
+                    row.className = 'output-array-item';
+                    row.textContent = item ?? '';
+                    target.appendChild(row);
+                });
+                return;
+            }
+
             if (target.tagName === 'IMG') {
                 target.src = value || '';
                 target.style.display = value ? 'block' : 'none';
                 return;
             }
 
-            target.textContent = Array.isArray(value) ? JSON.stringify(value) : (value ?? '');
+            target.textContent = value ?? '';
         }
 
         function addRepeatableInput(groupName) {
