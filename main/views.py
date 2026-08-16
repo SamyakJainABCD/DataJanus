@@ -19,6 +19,7 @@ class AllowedType(str, Enum):
     IMAGE_DATA = "ImageData"
     ARRAY_BUFFER = "ArrayBuffer"
     FILE = "File"
+    PDF = "PDF"
     NUMBER = "Number"
     BOOLEAN = "Boolean"
     STRING = "String"
@@ -64,6 +65,9 @@ RULES:
 7. IMAGE DATA HANDLING: If an input or output type is `ImageData`, the runtime variable will actually be a **Base64 Data URL string**, NOT an `ImageData` object.
    - To read an image: You MUST create an `Image()`, assign the string to `img.src`, `await` its `onload` event wrapped in a Promise, and draw it to a `<canvas>` to manipulate pixels.
    - To output an image: You MUST convert your manipulated canvas back to a string using `canvas.toDataURL()` and assign that string to the output variable.
+8. PDF HANDLING: If an input or output type is `PDF`, the runtime value will be a PDF file represented as a Data URL string (for example `data:application/pdf;base64,...`) or an array of such strings.
+   - Treat `PDF` like a binary file payload, not plain text.
+9. NUMBER HANDLING: If an input or output type is `Number`, the runtime value is a JavaScript number, and the generated code must not treat it as a string.
 """
 
 # for testing
@@ -106,6 +110,10 @@ def _get_ui_variant(io_type):
     normalized = _normalize_type(io_type)
     if normalized == AllowedType.IMAGE_DATA:
         return "image"
+    if normalized == AllowedType.NUMBER:
+        return "number"
+    if normalized in {AllowedType.PDF, AllowedType.FILE}:
+        return "pdf"
     return "string"
 
 

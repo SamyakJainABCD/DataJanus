@@ -51,7 +51,7 @@
         label {
             font-weight: 600;
         }
-        input[type="text"], input[type="file"], textarea {
+        input[type="text"], input[type="file"], input[type="number"], textarea {
             width: 100%;
             padding: 10px 12px;
             border: 1px solid #d1d5db;
@@ -88,6 +88,13 @@
             max-height: 280px;
             border-radius: 8px;
             display: none;
+        }
+        .pdf-link {
+            display: inline-block;
+            margin-top: 8px;
+            color: #1d4ed8;
+            text-decoration: underline;
+            word-break: break-all;
         }
         .error {
             color: #b91c1c;
@@ -131,18 +138,33 @@
             });
         }
 
-        function setOutputValue(name, value) {
+        async function getOpenablePdfUrl(value) {
+            if (!value || typeof value !== 'string') {
+                return '';
+            }
+
+            if (value.startsWith('data:')) {
+                const response = await fetch(value);
+                const blob = await response.blob();
+                return URL.createObjectURL(blob);
+            }
+
+            return value;
+        }
+
+        async function setOutputValue(name, value) {
             const target = document.getElementById(name);
             if (!target) return;
 
             const outputMeta = appOutputs.find((item) => item.name === name) || {};
             const isArrayOutput = outputMeta.count === '*' || Array.isArray(value);
+            const outputType = (outputMeta.type || target.dataset.outputType || 'string').toLowerCase();
 
             if (isArrayOutput) {
                 const items = Array.isArray(value) ? value : [value];
                 target.innerHTML = '';
 
-                if (target.dataset.outputType === 'image') {
+                if (outputType === 'image') {
                     items.forEach((item) => {
                         const img = document.createElement('img');
                         img.className = 'output-image';
@@ -151,6 +173,25 @@
                         img.style.display = item ? 'block' : 'none';
                         target.appendChild(img);
                     });
+                    return;
+                }
+
+                if (outputType === 'pdf') {
+                    for (const item of items) {
+                        const link = document.createElement('a');
+                        link.className = 'pdf-link';
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        link.textContent = item ? 'Open PDF' : 'No PDF available';
+
+                        if (item) {
+                            link.href = await getOpenablePdfUrl(item);
+                        } else {
+                            link.removeAttribute('href');
+                        }
+
+                        target.appendChild(link);
+                    }
                     return;
                 }
 
@@ -166,6 +207,23 @@
             if (target.tagName === 'IMG') {
                 target.src = value || '';
                 target.style.display = value ? 'block' : 'none';
+                return;
+            }
+
+            if (outputType === 'pdf') {
+                target.innerHTML = '';
+                if (!value) {
+                    target.textContent = 'Waiting for result...';
+                    return;
+                }
+
+                const link = document.createElement('a');
+                link.className = 'pdf-link';
+                link.href = await getOpenablePdfUrl(value);
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                link.textContent = 'Open PDF';
+                target.appendChild(link);
                 return;
             }
 
@@ -201,6 +259,7 @@
             for (const field of appInputs) {
                 const name = field.name;
                 const count = field.count || '1';
+                const fieldType = (field.type || 'String').toLowerCase();
                 const group = document.querySelectorAll(`[data-input-group="${name}"] .repeatable-item input, [data-input-group="${name}"] .repeatable-item textarea`);
                 const collected = [];
 
@@ -211,9 +270,16 @@
                         } else {
                             collected.push('');
                         }
-                    } else {
-                        collected.push(input.value);
+                        continue;
                     }
+
+                    if (fieldType === 'number') {
+                        const rawValue = input.value;
+                        collected.push(rawValue === '' ? '' : Number(rawValue));
+                        continue;
+                    }
+
+                    collected.push(input.value);
                 }
 
                 values[name] = count === '*' ? collected : (collected[0] ?? '');
@@ -250,7 +316,7 @@
                 {{ code_snippet|safe }}
 
                 {% for item in outputs %}
-                    setOutputValue('{{ item.name }}', {{ item.name }});
+                    await setOutputValue('{{ item.name }}', {{ item.name }});
                 {% endfor %}
             } catch (error) {
                 const statusEl = document.getElementById('run-app-status');
