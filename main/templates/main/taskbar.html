@@ -1,0 +1,66 @@
+{% block taskbar_css %}
+        <style>
+            .taskbar {
+                background-color: #ffffff;
+                border-bottom: 1px solid #e2e8f0;
+                padding: 0 24px;
+                height: 60px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+                position: sticky;
+                top: 0;
+                z-index: 1000;
+            }
+
+            .taskbar a {
+                text-decoration: none;
+                color: #4a5568;
+                font-weight: 600;
+                font-size: 0.95rem;
+                padding: 8px 14px;
+                border-radius: 6px;
+                transition: color 0.2s, background-color 0.2s;
+            }
+
+            .taskbar a:hover {
+                color: #3182ce;
+                background-color: #f7fafc;
+            }
+
+            /* Push auth buttons (Sign up/Log in/Log out) to the far right */
+            .taskbar a[href*="logout"],
+            .taskbar a[href*="login"],
+            .taskbar a[href*="signup"] {
+                margin-left: auto;
+            }
+
+            /* Secondary right-aligned items sit next to each other */
+            .taskbar a[href*="login"] + a[href*="signup"],
+            .taskbar a[href*="signup"] + a[href*="login"] {
+                margin-left: 0;
+            }
+
+            /* Distinct primary highlight for the Sign up button */
+            .taskbar a[href*="signup"] {
+                background-color: #3182ce;
+                color: #ffffff;
+            }
+
+            .taskbar a[href*="signup"]:hover {
+                background-color: #2b6cb0;
+                color: #ffffff;
+            }
+        </style>
+{% endblock %}
+<nav class="taskbar" aria-label="Main navigation">
+    <a href="{% url 'home' %}">DataJanus</a>
+    {% if user.is_authenticated %}
+        <a href="{% url 'history' %}">History</a>
+        <a href="{% url 'logout' %}">Log out</a>
+    {% else %}
+        <a href="{% url 'signup' %}">Sign up</a>
+        <a href="{% url 'login' %}">Log in</a>
+    {% endif %}
+</nav>

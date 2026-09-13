@@ -4,15 +4,37 @@ from enum import Enum
 from typing import Literal
 
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
+from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
+from .models import History
 
 
 def home(request):
     return render(request, 'main/home.html')
+
+
+def signup(request):
+    if request.user.is_authenticated:
+        return redirect('home')
+
+    form = UserCreationForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        user = form.save()
+        login(request, user)
+        return redirect('home')
+    return render(request, 'registration/signup.html', {'form': form})
+
+
+def history(request):
+    if not request.user.is_authenticated:
+        return redirect('home')
+    return render(request, 'main/history.html', {'entries': History.objects.filter(user=request.user)})
 
 
 class AllowedType(str, Enum):
@@ -158,9 +180,19 @@ def _build_generated_app_html(request, node_payload):
         'rendered_outputs': '\n'.join(rendered_outputs),
         'code_snippet': code_snippet,
     }
-    return render(request, 'main/generated_app.html', context)
+    generated_app_html = render_to_string(
+        'main/generated_app.html',
+        {**context, 'sandboxed': True},
+        request=request,
+    )
+    return render(
+        request,
+        'main/generated_app_frame.html',
+        {'generated_app_html': generated_app_html},
+    )
 
 
+@login_required
 def makeApp(request):
     if request.method != 'POST':
         return HttpResponse('This view only accepts POST requests.', status=405)
@@ -176,8 +208,20 @@ def makeApp(request):
     except Exception:
         return HttpResponse('The app generator could not process your request. Please try again.', status=500)
     print(raw_response)
-    if not raw_response:
-        node_payload = {}
-    else:
-        node_payload = json.loads(raw_response)
-    return _build_generated_app_html(request, node_payload)
+    try:
+        node_payload = json.loads(raw_response) if raw_response else {}
+    except json.JSONDecodeError:
+        return HttpResponse('The app generator returned invalid data.', status=500)
+
+    entry = History.objects.create(
+        user=request.user,
+        prompt=user_prompt,
+        gemini_output=node_payload,
+    )
+    return redirect('app', app_number=entry.pk)
+
+
+@login_required
+def generated_app(request, app_number):
+    entry = get_object_or_404(History, pk=app_number, user=request.user)
+    return _build_generated_app_html(request, entry.gemini_output)

@@ -1,9 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generated App</title>
+{% extends 'main/base.html' %}
+
+{% block title %}Generated App{% endblock %}
+
+{% block extra_head %}
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'none';
+        script-src 'unsafe-inline';
+        style-src 'unsafe-inline';
+        connect-src 'none';
+        img-src data:;
+        base-uri 'none';
+        form-action 'none';
+    ">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -101,8 +109,9 @@
             font-weight: 600;
         }
     </style>
-</head>
-<body>
+{% endblock %}
+
+{% block content %}
     <div class="app-shell">
         <h1>Generated App</h1>
 
@@ -327,5 +336,4 @@
             }
         });
     </script>
-</body>
-</html>
+{% endblock %}

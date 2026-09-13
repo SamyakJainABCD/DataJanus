@@ -1,0 +1,23 @@
+{% extends 'main/base.html' %}
+
+{% block title %}Generated App{% endblock %}
+
+{% block extra_head %}
+    <style>
+        .generated-app-frame {
+            border: 0;
+            display: block;
+            height: calc(100vh - 60px);
+            width: 100%;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <iframe
+        class="generated-app-frame"
+        title="Generated App"
+        sandbox="allow-scripts"
+        srcdoc="{{ generated_app_html|force_escape }}"
+    ></iframe>
+{% endblock %}

@@ -1,6 +1,6 @@
 {% extends 'main/base.html' %}
 
-{% block title %}Home{% endblock %}
+{% block title %}Sign up{% endblock %}
 
 {% block extra_head %}
     <style>
@@ -19,7 +19,6 @@
             flex-direction: column;
         }
 
-        /* Container to center content below the taskbar */
         .main-container {
             flex: 1;
             display: flex;
@@ -30,24 +29,10 @@
         }
 
         h1 {
-            margin-bottom: 8px;
+            margin-bottom: 24px;
             font-size: 2.25rem;
             color: #1a202c;
             font-weight: 700;
-        }
-
-        .user-info {
-            font-size: 0.95rem;
-            color: #4a5568;
-            background-color: #e2e8f0;
-            padding: 6px 14px;
-            border-radius: 20px;
-            margin-bottom: 24px;
-        }
-
-        .user-info span {
-            font-weight: 600;
-            color: #2d3748;
         }
 
         form {
@@ -57,10 +42,15 @@
             box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
             border: 1px solid #e2e8f0;
             width: 100%;
-            max-width: 440px;
+            max-width: 480px; /* Slightly wider to comfortably hold password requirements */
+        }
+
+        /* Django form paragraph wrapper */
+        form p {
+            margin-bottom: 18px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 6px;
         }
 
         label {
@@ -69,7 +59,9 @@
             color: #4a5568;
         }
 
-        input[type="text"] {
+        input[type="text"],
+        input[type="password"],
+        input[type="email"] {
             width: 100%;
             padding: 12px 14px;
             border: 1px solid #cbd5e0;
@@ -79,12 +71,38 @@
             outline: none;
         }
 
-        input[type="text"]:focus {
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        input[type="email"]:focus {
             border-color: #3182ce;
             box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.2);
         }
 
+        /* Django form help text & requirements */
+        .helptext, 
+        form p ul {
+            font-size: 0.8rem;
+            color: #718096;
+            line-height: 1.4;
+            margin-top: 2px;
+        }
+
+        form p ul {
+            padding-left: 18px;
+            margin-top: 4px;
+        }
+
+        /* Django form validation errors */
+        .errorlist {
+            list-style: none;
+            color: #e53e3e;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
         button[type="submit"] {
+            width: 100%;
             background-color: #3182ce;
             color: #ffffff;
             font-size: 1rem;
@@ -108,18 +126,13 @@
 {% endblock %}
 
 {% block content %}
+
     <main class="main-container">
-        <h1>Home</h1>
-
-        {% if user.is_authenticated %}
-            <p class="user-info">Signed in as <span>{{ user.username }}</span></p>
-        {% endif %}
-
-        <form method="post" action="{% url 'makeApp' %}">
+        <h1>Sign up</h1>
+        <form method="post">
             {% csrf_token %}
-            <label for="user_prompt">Prompt:</label>
-            <input type="text" id="user_prompt" name="user_prompt" placeholder="Enter prompt">
-            <button type="submit">Submit</button>
+            {{ form.as_p }}
+            <button type="submit">Sign up</button>
         </form>
     </main>
 {% endblock %}

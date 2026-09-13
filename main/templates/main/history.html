@@ -1,0 +1,12 @@
+{% extends 'main/base.html' %}
+
+{% block title %}History{% endblock %}
+
+{% block content %}
+    <h1>History</h1>
+    {% for entry in entries %}
+        <p><a href="{% url 'app' entry.pk %}">{{ entry.prompt }}</a></p>
+    {% empty %}
+        <p>No generated apps yet.</p>
+    {% endfor %}
+{% endblock %}
